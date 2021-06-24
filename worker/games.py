@@ -396,11 +396,10 @@ def setup_engine(
                     github_api(repo_url) + "/zipball/" + sha, timeout=HTTP_TIMEOUT
                 ).content
             )
-        zip_file = ZipFile("sf.gz")
-        zip_file.extractall()
-        zip_file.close()
-
-        os.chdir(glob.glob(os.path.join(tmp_dir, "*/src/"))[0])
+        with ZipFile("sf.gz") as zip_file:
+            zip_file.extractall(tmp_dir)
+        #Using glob is bad idea 
+        os.chdir('/src')
 
         net = required_net_from_source()
         if net:
@@ -416,9 +415,9 @@ def setup_engine(
         ARCH = find_arch_string()
 
         subprocess.check_call(
-            MAKE_CMD + ARCH + " -j {}".format(concurrency) + " profile-build",
+            MAKE_CMD + ARCH + " -j {}".format(concurrency) + " profile-build CXXFLAGS=\"-DNNUE_EMBEDDING_OFF\"",
             shell=True,
-            env=dict(os.environ, CXXFLAGS="-DNNUE_EMBEDDING_OFF"),
+            cwd=os.getcwd()
         )
         try:  # try/pass needed for backwards compatibility with older stockfish, where 'make strip' fails under mingw.
             subprocess.check_call(
